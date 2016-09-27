@@ -1,82 +1,76 @@
+# coding=utf-8
 """
 Mailchimp v3 Api SDK
 
+Documentation at http://developer.mailchimp.com/documentation/mailchimp/reference/overview/
 """
-from .mailchimpclient import MailChimpClient
-from .entities.root import Root
-from .entities.authorizedapp import AuthorizedApp
-from .entities.automation import Automation
-from .entities.message import Message
-from .entities.campaign import Campaign
-from .entities.report import Report
-from .entities.feedback import Feedback
-from .entities.conversation import Conversation
-from .entities.listabuse import ListAbuse
-from .entities.listactivity import ListActivity
-from .entities.memberactivity import MemberActivity
-from .entities.reportactivity import ReportActivity
-from .entities.reportunsubscribed import ReportUnsubscribed
-from .entities.client import Client
-from .entities.list import List
-from .entities.growth import Growth
-from .entities.template import Template
-from .entities.interest import Interest
-from .entities.category import Category
-from .entities.goal import Goal
-from .entities.member import Member
-from .entities.mergefields import MergeFields
-from .entities.reportabuse import ReportAbuse
-from .entities.files import File
-from .entities.folder import Folder
-from .entities.automationemail import AutomationEmail
-from .entities.automationemailqueue import AutomationEmailQueue
-from .entities.automationeremovedsubscriber import AutomationRemovedSubscriber
-from .entities.batches import Batches
-from .entities.segments import Segments
+# API Client
+from mailchimp3.mailchimpclient import MailChimpClient
+# API Root
+from mailchimp3.entities.root import Root
+# Authorized Apps
+from mailchimp3.entities.authorizedapps import AuthorizedApps
+# Automations
+from mailchimp3.entities.automations import Automations
+# Batche Operations
+from mailchimp3.entities.batches import Batches
+# Campaign Folders
+from mailchimp3.entities.campaignfolders import CampaignFolders
+# Campaigns
+from mailchimp3.entities.campaigns import Campaigns
+# Conversations
+from mailchimp3.entities.conversations import Conversations
+# E-commerce Stores
+from mailchimp3.entities.stores import Stores
+# File Manager Files
+from mailchimp3.entities.filemanagerfiles import FileManagerFiles
+# File Manager Folders
+from mailchimp3.entities.filemanagerfolders import FileManagerFolders
+# Lists
+from mailchimp3.entities.lists import Lists
+# Reports
+from mailchimp3.entities.reports import Reports
+# Template Folders
+from mailchimp3.entities.templatefolders import TemplateFolders
+# Templates
+from mailchimp3.entities.templates import Templates
 
 
 class MailChimp(MailChimpClient):
     """
     MailChimp class to communicate with the v3 API
     """
-
     def __init__(self, *args, **kwargs):
         """
-        Initialize the class with your user_id and secret_key
+        Initialize the class with your user_id and secret_key and attach all
+        of the endpoints
         """
         super(MailChimp, self).__init__(*args, **kwargs)
+        # API Root
+        self.root = self.api_root = Root(self)
         # Authorized Apps
-        self.authorized_app = AuthorizedApp(self)
-        # Automation
-        self.automation = Automation(self)
-        self.automationemail = AutomationEmail(self)
-        self.automationemailqueue = AutomationEmailQueue(self)
-        self.automationeremovedsubscriber = AutomationRemovedSubscriber(self)
+        self.authorized_apps = AuthorizedApps(self)
+        # Automations - Paid feature
+        self.automations = Automations(self)
+        # Batch operations
+        self.batches = self.batch_operations = Batches(self)
+        # Campaign Folders
+        self.campaign_folders = CampaignFolders(self)
         # Campaigns
-        self.campaign = Campaign(self)
-        self.report = Report(self)
-        self.campaignfeedback = Feedback(self)
-        self.conversation = Conversation(self)
-        self.message = Message(self)
-        self.listactivity = ListActivity(self)
-        self.listabuse = ListAbuse(self)
-        self.client = Client(self)
-        self.list = List(self)
-        self.growth = Growth(self)
-        self.template = Template(self)
-        self.file = File(self)
-        self.folder = Folder(self)
-        self.category = Category(self)
-        self.interest = Interest(self)
-        self.memberactivity = MemberActivity(self)
-        self.reportactivity = ReportActivity(self)
-        self.reportunsubscribed = ReportUnsubscribed(self)
-        self.goal = Goal(self)
-        self.member = Member(self)
-        self.mergefields = MergeFields(self)
-        self.segments = Segments(self)
-        self.reportabuse = ReportAbuse(self)
-        # Batches operations
-        self.batches = Batches(self)
-        # Root
-        self.root = Root(self)
+        self.campaigns = Campaigns(self)
+        # Conversations - Paid feature
+        self.conversations = Conversations(self)
+        # E-commerce Stores
+        self.stores = self.ecommerce = Stores(self)
+        # File Manager Files
+        self.files = FileManagerFiles(self)
+        # File Manager Folders
+        self.folders = FileManagerFolders(self)
+        # Lists
+        self.lists = Lists(self)
+        # Reports
+        self.reports = Reports(self)
+        # Template Folders
+        self.template_folders = TemplateFolders(self)
+        # Templates
+        self.templates = Templates(self)
