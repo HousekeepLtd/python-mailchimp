@@ -25,7 +25,7 @@ class StoreProducts(BaseApi):
         self.endpoint = 'ecommerce/stores'
         self.store_id = None
         self.product_id = None
-        self.variants = StoreProductVariants(self)
+        self.variants = StoreProductVariants(*args, **kwargs)
 
 
     def create(self, store_id, data):
