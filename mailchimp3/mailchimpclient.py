@@ -101,7 +101,7 @@ class MailChimpClient(object):
 
         :param url: The url for the endpoint including path parameters
         :type url: :py:class:`str`
-        :returns: The JSON output from the API
+        :returns: True if successful
         """
         url = urljoin(self.base_url, url)
         try:
@@ -110,7 +110,7 @@ class MailChimpClient(object):
             raise e
         else:
             r.raise_for_status()
-            return r.json()
+            return True
 
 
     @_enabled_or_noop
