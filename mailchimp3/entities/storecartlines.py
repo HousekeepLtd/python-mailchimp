@@ -46,33 +46,21 @@ class StoreCartLines(BaseApi):
         """
         self.store_id = store_id
         self.cart_id = cart_id
-        try:
-            test = data['id']
-        except KeyError as error:
-            error.message += ' The cart line must have an id'
-            raise
-        try:
-            test = data['product_id']
-        except KeyError as error:
-            error.message += ' The cart line must have a product_id'
-            raise
-        try:
-            test = data['product_variant_id']
-        except KeyError as error:
-            error.message += ' The cart line must have a product_variant_id'
-            raise
-        try:
-            test = data['quantity']
-        except KeyError as error:
-            error.message += ' The cart line must have a quantity'
-            raise
-        try:
-            test = data['price']
-        except KeyError as error:
-            error.message += ' The cart line must have a price'
-            raise
+        if 'id' not in data:
+            raise KeyError('The cart line must have an id')
+        if 'product_id' not in data:
+            raise KeyError('The cart line must have a product_id')
+        if 'product_variant_id' not in data:
+            raise KeyError('The cart line must have a product_variant_id')
+        if 'quantity' not in data:
+            raise KeyError('The cart line must have a quantity')
+        if 'price' not in data:
+            raise KeyError('The cart line must have a price')
         response = self._mc_client._post(url=self._build_path(store_id, 'carts', cart_id, 'lines'), data=data)
-        self.line_id = response['id']
+        if response is not None:
+            self.line_id = response['id']
+        else:
+            self.line_id = None
         return response
 
 

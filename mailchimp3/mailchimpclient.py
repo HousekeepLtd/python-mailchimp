@@ -6,6 +6,8 @@ Documentation: http://developer.mailchimp.com/documentation/mailchimp/
 """
 from __future__ import unicode_literals
 import functools
+import re
+
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -17,6 +19,10 @@ except ImportError:
     from urlparse import urljoin
     from urllib import urlencode
 
+import logging
+
+_logger = logging.getLogger('mailchimp3.client')
+
 
 def _enabled_or_noop(fn):
     @functools.wraps(fn)
@@ -26,29 +32,87 @@ def _enabled_or_noop(fn):
     return wrapper
 
 
+class MailChimpError(Exception):
+    pass
+
+
+def _raise_response_error(r):
+    """
+    Return a MailChimpError to which we pass:
+        - the response object
+        - the response's JSON data if found.
+    """
+    error_data = {"response": r}
+    try:
+        json_data = r.json()
+    except ValueError:
+        # in case of a 500 error, the response might not be a JSON
+        pass
+    else:
+        error_data.update(json_data)
+    raise MailChimpError(error_data)
+
+
 class MailChimpClient(object):
     """
     MailChimp class to communicate with the v3 API
     """
-    def __init__(self, mc_user, mc_secret, enabled=True):
+    def __init__(self, mc_api=None, mc_user='python-mailchimp', access_token=None, enabled=True, timeout=None,
+                 request_hooks=None, request_headers=None):
         """
-        Initialize the class with you user_id and secret_key.
+        Initialize the class with your optional user_id and required api_key.
 
         If `enabled` is not True, these methods become no-ops. This is
         particularly useful for testing or disabling with configuration.
 
+        :param mc_api: Mailchimp API key
+        :type mc_api: :py:class:`str`
         :param mc_user: Mailchimp user id
         :type mc_user: :py:class:`str`
-        :param mc_secret: Mailchimp secret key
-        :type mc_secret: :py:class:`str`
+        :param access_token: The OAuth access token
+        :type access_token: :py:class:`str`
         :param enabled: Whether the API should execute any requests
         :type enabled: :py:class:`bool`
+        :param timeout: (optional) How long to wait for the server to send
+            data before giving up, as a float, or a :ref:`(connect timeout,
+            read timeout) <timeouts>` tuple.
+        :type timeout: float or tuple
+        :param request_hooks: (optional) Hooks for :py:func:`requests.requests`.
+        :type request_hooks: :py:class:`dict`
+        :param request_headers: (optional) Headers for
+            :py:func:`requests.requests`.
+        :type request_headers: :py:class:`dict`
         """
         super(MailChimpClient, self).__init__()
         self.enabled = enabled
-        self.auth = HTTPBasicAuth(mc_user, mc_secret)
-        datacenter = mc_secret.split('-').pop()
-        self.base_url = 'https://{}.api.mailchimp.com/3.0/'.format(datacenter)
+        self.timeout = timeout
+        if access_token:
+            self.auth = MailChimpOAuth(access_token)
+            self.base_url = self.auth.get_base_url() + '/3.0/'
+        elif mc_api:
+            if not re.match(r"^[0-9a-f]{32}$", mc_api.split('-')[0]):
+                raise ValueError('The API key that you have entered is not valid, did you enter a username by mistake?\n'
+                                 'The order of arguments for API key and username has reversed in 2.1.0')
+            self.auth = HTTPBasicAuth(mc_user, mc_api)
+            datacenter = mc_api.split('-').pop()
+            self.base_url = 'https://{0}.api.mailchimp.com/3.0/'.format(datacenter)
+        else:
+            raise Exception('You must provide an OAuth access token or API key')
+        self.request_headers = request_headers or requests.utils.default_headers()
+        self.request_hooks = request_hooks or requests.hooks.default_hooks()
+
+
+    def _make_request(self, **kwargs):
+        _logger.info(u'{method} Request: {url}'.format(**kwargs))
+        if kwargs.get('json'):
+            _logger.info('PAYLOAD: {json}'.format(**kwargs))
+
+        response = requests.request(**kwargs)
+
+        _logger.info(u'{method} Response: {status}'\
+            .format(method=kwargs['method'], status=response.status_code))
+
+        return response
 
 
     @_enabled_or_noop
@@ -64,11 +128,23 @@ class MailChimpClient(object):
         """
         url = urljoin(self.base_url, url)
         try:
-            r = requests.post(url, auth=self.auth, json=data)
+            r = self._make_request(**dict(
+                method='POST',
+                url=url,
+                json=data,
+                auth=self.auth,
+                timeout=self.timeout,
+                hooks=self.request_hooks,
+                headers=self.request_headers
+            ))
         except requests.exceptions.RequestException as e:
             raise e
         else:
-            r.raise_for_status()
+            if r.status_code >= 400:
+                _raise_response_error(r)
+
+            if r.status_code == 204:
+                return None
             return r.json()
 
 
@@ -86,11 +162,19 @@ class MailChimpClient(object):
         if len(queryparams):
             url += '?' + urlencode(queryparams)
         try:
-            r = requests.get(url, auth=self.auth)
+            r = self._make_request(**dict(
+                method='GET',
+                url=url,
+                auth=self.auth,
+                timeout=self.timeout,
+                hooks=self.request_hooks,
+                headers=self.request_headers
+            ))
         except requests.exceptions.RequestException as e:
             raise e
         else:
-            r.raise_for_status()
+            if r.status_code >= 400:
+                _raise_response_error(r)
             return r.json()
 
 
@@ -105,11 +189,21 @@ class MailChimpClient(object):
         """
         url = urljoin(self.base_url, url)
         try:
-            r = requests.delete(url, auth=self.auth)
+            r = self._make_request(**dict(
+                method='DELETE',
+                url=url,
+                auth=self.auth,
+                timeout=self.timeout,
+                hooks=self.request_hooks,
+                headers=self.request_headers
+            ))
         except requests.exceptions.RequestException as e:
             raise e
         else:
-            r.raise_for_status()
+            if r.status_code >= 400:
+                _raise_response_error(r)
+            if r.status_code == 204:
+                return
             return True
 
 
@@ -126,11 +220,20 @@ class MailChimpClient(object):
         """
         url = urljoin(self.base_url, url)
         try:
-            r = requests.patch(url, auth=self.auth, json=data)
+            r = self._make_request(**dict(
+                method='PATCH',
+                url=url,
+                json=data,
+                auth=self.auth,
+                timeout=self.timeout,
+                hooks=self.request_hooks,
+                headers=self.request_headers
+            ))
         except requests.exceptions.RequestException as e:
             raise e
         else:
-            r.raise_for_status()
+            if r.status_code >= 400:
+                _raise_response_error(r)
             return r.json()
 
 
@@ -147,9 +250,69 @@ class MailChimpClient(object):
         """
         url = urljoin(self.base_url, url)
         try:
-            r = requests.put(url, auth=self.auth, json=data)
+            r = self._make_request(**dict(
+                method='PUT',
+                url=url,
+                json=data,
+                auth=self.auth,
+                timeout=self.timeout,
+                hooks=self.request_hooks,
+                headers=self.request_headers
+            ))
+        except requests.exceptions.RequestException as e:
+            raise e
+        else:
+            if r.status_code >= 400:
+                _raise_response_error(r)
+            return r.json()
+
+
+class MailChimpOAuth(requests.auth.AuthBase):
+    """
+    Authentication class for authentication with OAuth2. Acquiring an OAuth2
+    for MailChimp can be done by following the instructions in the
+    documentation found at
+    http://developer.mailchimp.com/documentation/mailchimp/guides/how-to-use-oauth2/
+    """
+    def __init__(self, access_token):
+        """
+        Initialize the OAuth and save the access token
+
+        :param access_token: The access token provided by OAuth authentication
+        :type access_token: :py:class:`str`
+        """
+        self._access_token = access_token
+
+
+    def __call__(self, r):
+        """
+        Authorize with the access token provided in __init__
+        """
+        r.headers['Authorization'] = 'OAuth ' + self._access_token
+        return r
+
+
+    def get_metadata(self):
+        """
+        Get the metadata returned after authentication
+        """
+        try:
+            r = requests.get('https://login.mailchimp.com/oauth2/metadata', auth=self)
         except requests.exceptions.RequestException as e:
             raise e
         else:
             r.raise_for_status()
-            return r.json()
+            output = r.json()
+            if 'error' in output:
+                raise requests.exceptions.RequestException(output['error'])
+            return output
+
+
+    def get_base_url(self):
+        """
+        Get the base_url from the authentication metadata
+        """
+        try:
+            return self.get_metadata()['api_endpoint']
+        except requests.exceptions.RequestException:
+            raise

@@ -94,10 +94,11 @@ class CampaignActions(BaseApi):
             if data['schedule_time'].tzinfo is None:
                 raise ValueError('The schedule_time must be in UTC')
             else:
-                if data['schedule_time'].tzinfo.utcoffset() != timedelta(0):
+                if data['schedule_time'].tzinfo.utcoffset(None) != timedelta(0):
                     raise ValueError('The schedule_time must be in UTC')
         if data['schedule_time'].minute not in [0, 15, 30, 45]:
             raise ValueError('The schedule_time must end on the quarter hour (00, 15, 30, 45)')
+        data['schedule_time'] = data['schedule_time'].strftime('%Y-%m-%dT%H:%M:00+00:00')
         self.campaign_id = campaign_id
         return self._mc_client._post(url=self._build_path(campaign_id, 'actions/schedule'), data=data)
 
@@ -114,6 +115,19 @@ class CampaignActions(BaseApi):
         return self._mc_client._post(url=self._build_path(campaign_id, 'actions/send'))
 
 
+    def resend(self, campaign_id):
+        """
+        Creates a Resend to Non-Openers version of this campaign. We will also
+        check if this campaign meets the criteria for Resend to Non-Openers
+        campaigns.
+
+        :param campaign_id: The unique id for the campaign.
+        :type campaign_id: :py:class:`str`
+        """
+        self.campaign_id = campaign_id
+        return self._mc_client._post(url=self._build_path(campaign_id, 'actions/create-resend'))
+
+
     def test(self, campaign_id, data):
         """
         Send a test email.
@@ -124,13 +138,13 @@ class CampaignActions(BaseApi):
         :type data: :py:class:`dict`
         data = {
             "test_emails": array*,
-            "send_type": string* (Must be one of "html" or "plain_text")
+            "send_type": string* (Must be one of "html" or "plaintext")
         }
         """
         for email in data['test_emails']:
             check_email(email)
-        if data['send_type'] not in ['html', 'plain_text']:
-            raise ValueError('The send_type must be either "html" or "plain_text"')
+        if data['send_type'] not in ['html', 'plaintext']:
+            raise ValueError('The send_type must be either "html" or "plaintext"')
         self.campaign_id = campaign_id
         return self._mc_client._post(url=self._build_path(campaign_id, 'actions/test'), data=data)
 

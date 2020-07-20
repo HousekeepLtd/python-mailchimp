@@ -38,18 +38,15 @@ class ListMergeFields(BaseApi):
         }
         """
         self.list_id = list_id
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The list merge field must have a name'
-            raise
-        try:
-            test = data['type']
-        except KeyError as error:
-            error.message += ' The list merge field must have a type'
-            raise
+        if 'name' not in data:
+            raise KeyError('The list merge field must have a name')
+        if 'type' not in data:
+            raise KeyError('The list merge field must have a type')
         response = self._mc_client._post(url=self._build_path(list_id, 'merge-fields'), data=data)
-        self.merge_id = response['merge_id']
+        if response is not None:
+            self.merge_id = response['merge_id']
+        else:
+            self.merge_id = None
         return response
 
 
@@ -107,11 +104,8 @@ class ListMergeFields(BaseApi):
         """
         self.list_id = list_id
         self.merge_id = merge_id
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The list merge field must have a name'
-            raise
+        if 'name' not in data:
+            raise KeyError('The list merge field must have a name')
         return self._mc_client._patch(url=self._build_path(list_id, 'merge-fields', merge_id), data=data)
 
 

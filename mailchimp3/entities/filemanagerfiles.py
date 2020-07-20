@@ -36,18 +36,15 @@ class FileManagerFiles(BaseApi):
             "file_data": string*
         }
         """
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The file must have a name'
-            raise
-        try:
-            test = data['file_data']
-        except KeyError as error:
-            error.message += ' The file must have file_data'
-            raise
+        if 'name' not in data:
+            raise KeyError('The file must have a name')
+        if 'file_data' not in data:
+            raise KeyError('The file must have file_data')
         response = self._mc_client._post(url=self._build_path(), data=data)
-        self.file_id = response['id']
+        if response is not None:
+            self.file_id = response['id']
+        else:
+            self.file_id = None
         return response
 
 
@@ -104,16 +101,10 @@ class FileManagerFiles(BaseApi):
         }
         """
         self.file_id = file_id
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The file must have a name'
-            raise
-        try:
-            test = data['file_data']
-        except KeyError as error:
-            error.message += ' The file must have file_data'
-            raise
+        if 'name' not in data:
+            raise KeyError('The file must have a name')
+        if 'file_data' not in data:
+            raise KeyError('The file must have file_data')
         return self._mc_client._patch(url=self._build_path(file_id), data=data)
 
 

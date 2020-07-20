@@ -10,7 +10,7 @@ from __future__ import unicode_literals
 from mailchimp3.baseapi import BaseApi
 
 
-class Batches(BaseApi):
+class BatchOperations(BaseApi):
     """
     Use batch operations to complete multiple operations with a single call.
     """
@@ -18,7 +18,7 @@ class Batches(BaseApi):
         """
         Initialize the endpoint
         """
-        super(Batches, self).__init__(*args, **kwargs)
+        super(BatchOperations, self).__init__(*args, **kwargs)
         self.endpoint = 'batches'
         self.batch_id = None
         self.operation_status = None
@@ -34,31 +34,22 @@ class Batches(BaseApi):
             "operations": array*
             [
                 {
-                    "method": string* (Must be one of "GET", "POST", "PUT", or "PATCH")
+                    "method": string* (Must be one of "GET", "POST", "PUT", "PATCH", or "DELETE")
                     "path": string*,
                 }
             ]
         }
         """
-        try:
-            test = data['operations']
-        except KeyError as error:
-            error.message += ' The batch must have operations'
-            raise
+        if 'operations' not in data:
+            raise KeyError('The batch must have operations')
         for op in data['operations']:
-            try:
-                test = op['method']
-            except KeyError as error:
-                error.message += ' The batch operation must have a method'
-                raise
-            if op['method'] not in ['GET', 'POST', 'PUT', 'PATCH']:
-                raise ValueError('The batch operation method must be one of "GET", "POST", "PUT", or "PATCH", not {0}'
-                                 ''.format(op['method']))
-            try:
-                test = op['path']
-            except KeyError as error:
-                error.message += ' The batch operation must have a path'
-                raise
+            if 'method' not in op:
+                raise KeyError('The batch operation must have a method')
+            if op['method'] not in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']:
+                raise ValueError('The batch operation method must be one of "GET", "POST", "PUT", "PATCH", '
+                                 'or "DELETE", not {0}'.format(op['method']))
+            if 'path' not in op:
+                raise KeyError('The batch operation must have a path')
         return self._mc_client._post(url=self._build_path(), data=data)
 
 

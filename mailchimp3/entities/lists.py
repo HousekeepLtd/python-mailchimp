@@ -17,7 +17,6 @@ from mailchimp3.entities.listmembers import ListMembers
 from mailchimp3.entities.listmergefields import ListMergeFields
 from mailchimp3.entities.listsegments import ListSegments
 from mailchimp3.entities.listsignupforms import ListSignupForms
-from mailchimp3.entities.listtwitterleadgenerationcards import ListTwitterLeadGenerationCards
 from mailchimp3.entities.listwebhooks import ListWebhooks
 from mailchimp3.helpers import check_email
 
@@ -42,7 +41,6 @@ class Lists(BaseApi):
         self.merge_fields = ListMergeFields(*args, **kwargs)
         self.segments = ListSegments(*args, **kwargs)
         self.signup_forms = ListSignupForms(*args, **kwargs)
-        self.twitter_cards = ListTwitterLeadGenerationCards(*args, **kwargs)
         self.webhooks = ListWebhooks(*args, **kwargs)
 
 
@@ -63,7 +61,7 @@ class Lists(BaseApi):
                 "zip": string*,
                 "country": string*
             },
-            "permision_reminder": string*,
+            "permission_reminder": string*,
             "campaign_defaults": object*
             {
                 "from_name": string*,
@@ -74,86 +72,44 @@ class Lists(BaseApi):
             "email_type_option": boolean
         }
         """
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The list must have a name'
-            raise
-        try:
-            test = data['contact']
-        except KeyError as error:
-            error.message += ' The list must have a contact'
-            raise
-        try:
-            test = data['contact']['company']
-        except KeyError as error:
-            error.message += ' The list contact must have a company'
-            raise
-        try:
-            test = data['contact']['address1']
-        except KeyError as error:
-            error.message += ' The list contact must have a address1'
-            raise
-        try:
-            test = data['contact']['city']
-        except KeyError as error:
-            error.message += ' The list contact must have a city'
-            raise
-        try:
-            test = data['contact']['state']
-        except KeyError as error:
-            error.message += ' The list contact must have a state'
-            raise
-        try:
-            test = data['contact']['zip']
-        except KeyError as error:
-            error.message += ' The list contact must have a zip'
-            raise
-        try:
-            test = data['contact']['country']
-        except KeyError as error:
-            error.message += ' The list contact must have a country'
-            raise
-        try:
-            test = data['permission_reminder']
-        except KeyError as error:
-            error.message += ' The list must have a permission_reminder'
-            raise
-        try:
-            test = data['campaign_defaults']
-        except KeyError as error:
-            error.message += ' The list must have a campaign_defaults'
-            raise
-        try:
-            test = data['campaign_defaults']['from_name']
-        except KeyError as error:
-            error.message += ' The list campaign_defaults must have a from_name'
-            raise
-        try:
-            test = data['campaign_defaults']['from_email']
-        except KeyError as error:
-            error.message += ' The list campaign_defaults must have a from_email'
-            raise
+        if 'name' not in data:
+            raise KeyError('The list must have a name')
+        if 'contact' not in data:
+            raise KeyError('The list must have a contact')
+        if 'company' not in data['contact']:
+            raise KeyError('The list contact must have a company')
+        if 'address1' not in data['contact']:
+            raise KeyError('The list contact must have a address1')
+        if 'city' not in data['contact']:
+            raise KeyError('The list contact must have a city')
+        if 'state' not in data['contact']:
+            raise KeyError('The list contact must have a state')
+        if 'zip' not in data['contact']:
+            raise KeyError('The list contact must have a zip')
+        if 'country' not in data['contact']:
+            raise KeyError('The list contact must have a country')
+        if 'permission_reminder' not in data:
+            raise KeyError('The list must have a permission_reminder')
+        if 'campaign_defaults' not in data:
+            raise KeyError('The list must have a campaign_defaults')
+        if 'from_name' not in data['campaign_defaults']:
+            raise KeyError('The list campaign_defaults must have a from_name')
+        if 'from_email' not in data['campaign_defaults']:
+            raise KeyError('The list campaign_defaults must have a from_email')
         check_email(data['campaign_defaults']['from_email'])
-        try:
-            test = data['campaign_defaults']['subject']
-        except KeyError as error:
-            error.message += ' The list campaign_defaults must have a subject'
-            raise
-        try:
-            test = data['campaign_defaults']['language']
-        except KeyError as error:
-            error.message += ' The list campaign_defaults must have a language'
-            raise
-        try:
-            test = data['email_type_option']
-        except KeyError as error:
-            error.message += ' The list must have an email_type_option'
-            raise
+        if 'subject' not in data['campaign_defaults']:
+            raise KeyError('The list campaign_defaults must have a subject')
+        if 'language' not in data['campaign_defaults']:
+            raise KeyError('The list campaign_defaults must have a language')
+        if 'email_type_option' not in data:
+            raise KeyError('The list must have an email_type_option')
         if data['email_type_option'] not in [True, False]:
             raise TypeError('The list email_type_option must be True or False')
         response = self._mc_client._post(url=self._build_path(), data=data)
-        self.list_id = response['id']
+        if response is not None:
+            self.list_id = response['id']
+        else:
+            self.list_id = None
         return response
 
 
@@ -161,12 +117,11 @@ class Lists(BaseApi):
         """
         Batch subscribe or unsubscribe list members.
 
-        Only the members array is required in the request body parameters, but
-        the description of it mentions both the email_address and status
-        values, so those are going to be treated as required. The
-        update_existing parameter will also be considered required to help
-        prevent accidental updates to existing members and will default to
-        false if not present.
+        Only the members array is required in the request body parameters.
+        Within the members array, each member requires an email_address
+        and either a status or status_if_new. The update_existing parameter
+        will also be considered required to help prevent accidental updates
+        to existing members and will default to false if not present.
 
         :param list_id: The unique id for the list.
         :type list_id: :py:class:`str`
@@ -177,38 +132,35 @@ class Lists(BaseApi):
             [
                 {
                     "email_address": string*,
-                    "status": string* (Must be one of 'subscribed', 'unsubscribed', 'cleaned', or 'pending')
+                    "status": string* (Must be one of 'subscribed', 'unsubscribed', 'cleaned', or 'pending'),
+                    "status_if_new": string* (Must be one of 'subscribed', 'unsubscribed', 'cleaned', or 'pending')
                 }
             ],
             "update_existing": boolean*
         }
         """
         self.list_id = list_id
-        try:
-            test = data['members']
-        except KeyError as error:
-            error.message += ' The update must have at least one member'
-            raise
+        if 'members' not in data:
+            raise KeyError('The update must have at least one member')
+        else:
+            if not len(data['members']) <= 500:
+                raise ValueError('You may only batch sub/unsub 500 members at a time')
         for member in data['members']:
-            try:
-                test = member['email_address']
-            except KeyError as error:
-                error.message += ' Each list member must have an email_address'
-                raise
+            if 'email_address' not in member:
+                raise KeyError('Each list member must have an email_address')
             check_email(member['email_address'])
-            try:
-                test = member['status']
-            except KeyError as error:
-                error.message += ' Each list member must have a status'
-                raise
-            if member['status'] not in ['subscribed', 'unsubscribed', 'cleaned', 'pending']:
+            if 'status' not in member and 'status_if_new' not in member:
+                raise KeyError('Each list member must have either a status or a status_if_new')
+            valid_statuses = ['subscribed', 'unsubscribed', 'cleaned', 'pending']
+            if 'status' in member and member['status'] not in valid_statuses:
                 raise ValueError('The list member status must be one of "subscribed", "unsubscribed", "cleaned", or '
                                  '"pending"')
-        try:
-            test = data['update_existing']
-        except KeyError:
+            if 'status_if_new' in member and member['status_if_new'] not in valid_statuses:
+                raise ValueError('The list member status_if_new must be one of "subscribed", "unsubscribed", '
+                                 '"cleaned", or "pending"')
+        if 'update_existing' not in data:
             data['update_existing'] = False
-        return self._mc_client._post(url=self._build_path(), data=data)
+        return self._mc_client._post(url=self._build_path(list_id), data=data)
 
 
     def all(self, get_all=False, **queryparams):
@@ -227,6 +179,8 @@ class Lists(BaseApi):
         queryparams['before_campaign_last_sent'] = string
         queryparams['since_campaign_last_sent'] = string
         queryparams['email'] = string
+        queryparams['sort_field'] = string (Must be 'date_created')
+        queryparams['sort_dir'] = string (Must be one of 'ASC' or 'DESC')
         """
         self.list_id = None
         if get_all:
@@ -270,7 +224,7 @@ class Lists(BaseApi):
                 "zip": string*,
                 "country": string*
             },
-            "permision_reminder": string*,
+            "permission_reminder": string*,
             "campaign_defaults": object*
             {
                 "from_name": string*,
@@ -282,82 +236,37 @@ class Lists(BaseApi):
         }
         """
         self.list_id = list_id
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The list must have a name'
-            raise
-        try:
-            test = data['contact']
-        except KeyError as error:
-            error.message += ' The list must have a contact'
-            raise
-        try:
-            test = data['contact']['company']
-        except KeyError as error:
-            error.message += ' The list contact must have a company'
-            raise
-        try:
-            test = data['contact']['address1']
-        except KeyError as error:
-            error.message += ' The list contact must have a address1'
-            raise
-        try:
-            test = data['contact']['city']
-        except KeyError as error:
-            error.message += ' The list contact must have a city'
-            raise
-        try:
-            test = data['contact']['state']
-        except KeyError as error:
-            error.message += ' The list contact must have a state'
-            raise
-        try:
-            test = data['contact']['zip']
-        except KeyError as error:
-            error.message += ' The list contact must have a zip'
-            raise
-        try:
-            test = data['contact']['country']
-        except KeyError as error:
-            error.message += ' The list contact must have a country'
-            raise
-        try:
-            test = data['permission_reminder']
-        except KeyError as error:
-            error.message += ' The list must have a permission_reminder'
-            raise
-        try:
-            test = data['campaign_defaults']
-        except KeyError as error:
-            error.message += ' The list must have a campaign_defaults'
-            raise
-        try:
-            test = data['campaign_defaults']['from_name']
-        except KeyError as error:
-            error.message += ' The list campaign_defaults must have a from_name'
-            raise
-        try:
-            test = data['campaign_defaults']['from_email']
-        except KeyError as error:
-            error.message += ' The list campaign_defaults must have a from_email'
-            raise
+        if 'name' not in data:
+            raise KeyError('The list must have a name')
+        if 'contact' not in data:
+            raise KeyError('The list must have a contact')
+        if 'company' not in data['contact']:
+            raise KeyError('The list contact must have a company')
+        if 'address1' not in data['contact']:
+            raise KeyError('The list contact must have a address1')
+        if 'city' not in data['contact']:
+            raise KeyError('The list contact must have a city')
+        if 'state' not in data['contact']:
+            raise KeyError('The list contact must have a state')
+        if 'zip' not in data['contact']:
+            raise KeyError('The list contact must have a zip')
+        if 'country' not in data['contact']:
+            raise KeyError('The list contact must have a country')
+        if 'permission_reminder' not in data:
+            raise KeyError('The list must have a permission_reminder')
+        if 'campaign_defaults' not in data:
+            raise KeyError('The list must have a campaign_defaults')
+        if 'from_name' not in data['campaign_defaults']:
+            raise KeyError('The list campaign_defaults must have a from_name')
+        if 'from_email' not in data['campaign_defaults']:
+            raise KeyError('The list campaign_defaults must have a from_email')
         check_email(data['campaign_defaults']['from_email'])
-        try:
-            test = data['campaign_defaults']['subject']
-        except KeyError as error:
-            error.message += ' The list campaign_defaults must have a subject'
-            raise
-        try:
-            test = data['campaign_defaults']['language']
-        except KeyError as error:
-            error.message += ' The list campaign_defaults must have a language'
-            raise
-        try:
-            test = data['email_type_option']
-        except KeyError as error:
-            error.message += ' The list must have an email_type_option'
-            raise
+        if 'subject' not in data['campaign_defaults']:
+            raise KeyError('The list campaign_defaults must have a subject')
+        if 'language' not in data['campaign_defaults']:
+            raise KeyError('The list campaign_defaults must have a language')
+        if 'email_type_option' not in data:
+            raise KeyError('The list must have an email_type_option')
         if data['email_type_option'] not in [True, False]:
             raise TypeError('The list email_type_option must be True or False')
         return self._mc_client._patch(url=self._build_path(list_id), data=data)

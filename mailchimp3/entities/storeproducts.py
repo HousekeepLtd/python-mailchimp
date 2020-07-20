@@ -8,6 +8,7 @@ Schema: https://api.mailchimp.com/schema/3.0/Ecommerce/Stores/Products/Instance.
 from __future__ import unicode_literals
 
 from mailchimp3.baseapi import BaseApi
+from mailchimp3.entities.storeproductimages import StoreProductImages
 from mailchimp3.entities.storeproductvariants import StoreProductVariants
 
 
@@ -25,6 +26,7 @@ class StoreProducts(BaseApi):
         self.endpoint = 'ecommerce/stores'
         self.store_id = None
         self.product_id = None
+        self.images = StoreProductImages(*args, **kwargs)
         self.variants = StoreProductVariants(*args, **kwargs)
 
 
@@ -49,34 +51,22 @@ class StoreProducts(BaseApi):
         }
         """
         self.store_id = store_id
-        try:
-            test = data['id']
-        except KeyError as error:
-            error.message += ' The product must have an id'
-            raise
-        try:
-            test = data['title']
-        except KeyError as error:
-            error.message += ' The product must have a title'
-            raise
-        try:
-            test = data['variants']
-        except KeyError as error:
-            error.message += ' The product must have at least one variant'
-            raise
+        if 'id' not in data:
+            raise KeyError('The product must have an id')
+        if 'title' not in data:
+            raise KeyError('The product must have a title')
+        if 'variants' not in data:
+            raise KeyError('The product must have at least one variant')
         for variant in data['variants']:
-            try:
-                test = variant['id']
-            except KeyError as error:
-                error.message += ' Each product variant must have an id'
-                raise
-            try:
-                test = variant['title']
-            except KeyError as error:
-                error.message += ' Each product variant must have a title'
-                raise
+            if 'id' not in variant:
+                raise KeyError('Each product variant must have an id')
+            if 'title' not in variant:
+                raise KeyError('Each product variant must have a title')
         response = self._mc_client._post(url=self._build_path(store_id, 'products'), data=data)
-        self.product_id = response['id']
+        if response is not None:
+            self.product_id = response['id']
+        else:
+            self.product_id = None
         return response
 
 
@@ -117,6 +107,25 @@ class StoreProducts(BaseApi):
         self.store_id = store_id
         self.product_id = product_id
         return self._mc_client._get(url=self._build_path(store_id, 'products', product_id), **queryparams)
+
+
+    def update(self, store_id, product_id, data):
+        """
+        Update a product.
+
+        :param store_id: The store id.
+        :type store_id: :py:class:`str`
+        :param product_id: The id for the product of a store.
+        :type product_id: :py:class:`str`
+        :param data: The request body parameters
+        :type data: :py:class:`dict`
+        """
+        self.store_id = store_id
+        self.product_id = product_id
+        return self._mc_client._patch(
+            url=self._build_path(store_id, 'products', product_id),
+            data=data
+        )
 
 
     def delete(self, store_id, product_id):

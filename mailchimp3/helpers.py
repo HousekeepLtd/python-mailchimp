@@ -52,13 +52,14 @@ def check_email(email):
     """
     Function that verifies that the string passed is a valid email address.
 
-    Regex for email validation from http://emailregex.com/
+    Regex for email validation based on MailChimp limits:
+    http://kb.mailchimp.com/accounts/management/international-characters-in-mailchimp
 
     :param email: The potential email address
     :type email: :py:class:`str`
     :return: Nothing
     """
-    if not re.match(r"(^[a-zA-Z0-9_.+'-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email):
+    if not re.match(r".+@.+\..+", email):
         raise ValueError('String passed is not a valid email address')
     return
 
@@ -72,7 +73,7 @@ def check_url(url):
     Used under MIT license.
 
     :param url:
-    :return:
+    :return: Nothing
     """
     URL_REGEX = re.compile(
     u"^"
@@ -99,9 +100,14 @@ def check_url(url):
     return
 
 
-def merge_two_dicts(x, y):
+def merge_results(x, y):
     """
-    Given two dicts, merge them into a new dict as a shallow copy.
+    Given two dicts, x and y, merge them into a new dict as a shallow copy.
+
+    The result only differs from `x.update(y)` in the way that it handles list
+    values when both x and y have list values for the same key. In which case
+    the returned dictionary, z, has a value according to:
+      z[key] = x[key] + z[key]
 
     :param x: The first dictionary
     :type x: :py:class:`dict`
@@ -111,5 +117,9 @@ def merge_two_dicts(x, y):
     :rtype: :py:class:`dict`
     """
     z = x.copy()
-    z.update(y)
+    for key, value in y.items():
+        if isinstance(value, list) and isinstance(z.get(key), list):
+            z[key] += value
+        else:
+            z[key] = value
     return z

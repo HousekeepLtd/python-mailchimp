@@ -38,18 +38,15 @@ class Templates(BaseApi):
             "html": string*
         }
         """
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The template must have a name'
-            raise
-        try:
-            test = data['html']
-        except KeyError as error:
-            error.message += ' The template must have html'
-            raise
+        if 'name' not in data:
+            raise KeyError('The template must have a name')
+        if 'html' not in data:
+            raise KeyError('The template must have html')
         response = self._mc_client._post(url=self._build_path(), data=data)
-        self.template_id = response['id']
+        if response is not None:
+            self.template_id = response['id']
+        else:
+            self.template_id = None
         return response
 
 
@@ -104,16 +101,10 @@ class Templates(BaseApi):
             "html": string*
         }
         """
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The template must have a name'
-            raise
-        try:
-            test = data['html']
-        except KeyError as error:
-            error.message += ' The template must have html'
-            raise
+        if 'name' not in data:
+            raise KeyError('The template must have a name')
+        if 'html' not in data:
+            raise KeyError('The template must have html')
         self.template_id = template_id
         return self._mc_client._patch(url=self._build_path(template_id), data=data)
 

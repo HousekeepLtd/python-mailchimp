@@ -19,6 +19,22 @@ class StoreOrders(BaseApi):
     used to provide more detailed campaign reports, track sales, and
     personalize emails to your targeted consumers, and view other e-commerce
     data in your MailChimp account.
+
+    .. note::
+        If a financial_status or fulfillment_status value is provided when
+        creating or updating an order, it will trigger a notification email if
+        they have been designed and enabled in your account. The following sets
+        of statuses trigger the following notification types:
+
+        financial_status = 'paid' -> Order Invoice
+        financial_status = 'pending' -> Order Confirmation
+        financial_status = 'refunded' -> Refund Confirmation
+        financial_status = 'cancelled' -> Cancellation Confirmation
+        fulfillment_status = 'shipped' -> Shipping Confirmation
+
+        The current list of notification types and triggers can be found at
+        http://developer.mailchimp.com/documentation/mailchimp/guides/getting-started-with-ecommerce/#order-notifications
+        and should be consulted in the event of any changes
     """
     def __init__(self, *args, **kwargs):
         """
@@ -60,66 +76,36 @@ class StoreOrders(BaseApi):
         }
         """
         self.store_id = store_id
-        try:
-            test = data['id']
-        except KeyError as error:
-            error.message += ' The order must have an id'
-            raise
-        try:
-            test = data['customer']
-        except KeyError as error:
-            error.message += ' The order must have a customer'
-            raise
-        try:
-            test = data['customer']['id']
-        except KeyError as error:
-            error.message += ' The order customer must have an id'
-            raise
-        try:
-            test = data['currency_code']
-        except KeyError as error:
-            error.message += ' The order must have a currency_code'
-            raise
+        if 'id' not in data:
+            raise KeyError('The order must have an id')
+        if 'customer' not in data:
+            raise KeyError('The order must have a customer')
+        if 'id' not in data['customer']:
+            raise KeyError('The order customer must have an id')
+        if 'currency_code' not in data:
+            raise KeyError('The order must have a currency_code')
         if not re.match(r"^[A-Z]{3}$", data['currency_code']):
             raise ValueError('The currency_code must be a valid 3-letter ISO 4217 currency code')
-        try:
-            test = data['order_total']
-        except KeyError as error:
-            error.message += ' The order must have an order_total'
-            raise
-        try:
-            test = data['lines']
-        except KeyError as error:
-            error.message += ' The order must have at least one order line'
-            raise
+        if 'order_total' not in data:
+            raise KeyError('The order must have an order_total')
+        if 'lines' not in data:
+            raise KeyError('The order must have at least one order line')
         for line in data['lines']:
-            try:
-                test = line['id']
-            except KeyError as error:
-                error.message += ' Each order line must have an id'
-                raise
-            try:
-                test = line['product_id']
-            except KeyError as error:
-                error.message += ' Each order line must have a product_id'
-                raise
-            try:
-                test = line['product_variant_id']
-            except KeyError as error:
-                error.message += ' Each order line must have a product_variant_id'
-                raise
-            try:
-                test = line['quantity']
-            except KeyError as error:
-                error.message += ' Each order line must have a quantity'
-                raise
-            try:
-                test = line['price']
-            except KeyError as error:
-                error.message += ' Each order line must have a price'
-                raise
+            if 'id' not in line:
+                raise KeyError('Each order line must have an id')
+            if 'product_id' not in line:
+                raise KeyError('Each order line must have a product_id')
+            if 'product_variant_id' not in line:
+                raise KeyError('Each order line must have a product_variant_id')
+            if 'quantity' not in line:
+                raise KeyError('Each order line must have a quantity')
+            if 'price' not in line:
+                raise KeyError('Each order line must have a price')
         response = self._mc_client._post(url=self._build_path(store_id, 'orders'), data=data)
-        self.order_id = response['id']
+        if response is not None:
+            self.order_id = response['id']
+        else:
+            self.order_id = None
         return response
 
 

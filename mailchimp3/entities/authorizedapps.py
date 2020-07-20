@@ -37,16 +37,10 @@ class AuthorizedApps(BaseApi):
         }
         """
         self.app_id = None
-        try:
-            test = data['client_id']
-        except KeyError as error:
-            error.message += ' The authorized app must have a client_id'
-            raise
-        try:
-            test = data['client_secret']
-        except KeyError as error:
-            error.message += ' The authorized app must have a client_secret'
-            raise
+        if 'client_id' not in data:
+            raise KeyError('The authorized app must have a client_id')
+        if 'client_secret' not in data:
+            raise KeyError('The authorized app must have a client_secret')
         return self._mc_client._post(url=self._build_path(), data=data)
 
 

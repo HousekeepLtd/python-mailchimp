@@ -1,12 +1,11 @@
-[![mailchimp3 v1.0.26 on PyPi](https://img.shields.io/badge/pypi-1.0.26-green.svg)](https://pypi.python.org/pypi/mailchimp3)
+[![mailchimp3 v3.0.14 on PyPi](https://img.shields.io/pypi/v/mailchimp3.svg)](https://pypi.python.org/pypi/mailchimp3)
 ![MIT license](https://img.shields.io/badge/licence-MIT-blue.svg)
 ![Stable](https://img.shields.io/badge/status-stable-green.svg)
 
 # python-mailchimp-api
 
-A straighforward python client for v3 of MailChimp API using requests >=
-2.7.0.
-
+A straighforward python client for v3 of MailChimp API using
+requests >= 2.7.0.
 
 ## Getting Started
 
@@ -17,36 +16,62 @@ it, simply run
 
 `pip install mailchimp3`
 
+### Upgrading from v2.x
+
+The order of arguments for initializing the Mailchimp API has been
+reversed starting in 2.1.0 as the username is an optional argument for
+basic auth. Please reverse the order of your arguments or remove the
+username argument entirely. The name of the authentication argument has
+also changed from `mc_secret` to `mc_api`.
+
 ### Upgrading from v1.x
 
-The installation procedure for 2.0.0 is the same as before, however
+The installation procedure for 2.x is the same as before, however
 there are a massive number of changes to the naming conventions within
 this wrapper and the way in which certain methods are called. Please
 read the documentation below carefully for information on the new
 structure and expanded functionality. With this release, all documented
 endpoints are implemented and all endpoint methods are available.
 
+### History
+
+Up to date with [changelog](http://developer.mailchimp.com/documentation/mailchimp/guides/changelog/)
+features listed thru 3/03/2017.
+
 ### Initialization
 
-Grab `YOUR_SECRET_KEY` from your mailchimp account (Account > Extra >
-Api Keys). `YOUR_USERNAME` is the one you use to login.
+Grab `YOUR_API_KEY` from your mailchimp account (Account > Extra > Api
+Keys). `YOUR_USERNAME` is the one you use to login on the website and
+is optional.
 
     from mailchimp3 import MailChimp
 
-    client = MailChimp('YOUR_USERNAME', 'YOUR_SECRET_KEY')
+    client = MailChimp(mc_api='YOUR_API_KEY', mc_user='YOUR_USERNAME')
+
+### OAuth Support
+
+In addition to HTTP Basic Authentication, MailChimp supports
+authentication through OAuth2. Information on obtaining the proper
+access key can be found
+[here](http://developer.mailchimp.com/documentation/mailchimp/guides/how-to-use-oauth2/).
 
 ### Pagination
 
-Simply add `count` and `offset` arguments in your function. The count is
-how many records to return, the offset is how many records to skip. For
-endpoints that allow the pagination parameters, the all() method has an
-additional boolean `get_all` argument that will loop through all records
-until the API no longer returns any to get all records without manually
-performing an additional query. By default, count is 10 and offset is 0
-for all endpoints that support it. The `get_all` parameter on the all()
-method on any endpoint defaults to false, which follows the values that
-are provided in the call, and using `get_all=True` will ignore the
-provided count and offset to ensure that all records are returned.
+Simply add `count` and `offset` arguments in your function. The count is how
+many records to return, the offset is how many records to skip. For endpoints
+that allow the pagination parameters, the all() method has an additional boolean
+`get_all` argument that will loop through all records until the API no longer
+returns any to get all records without manually performing an additional query.
+By default, count is 10 and offset is 0 for all endpoints that support it. The
+`get_all` parameter on the all() method on any endpoint defaults to false, which
+follows the values that are provided in the call, and using `get_all=True` will
+ignore the provided offset to ensure that all records are returned. When using
+get_all, the count will be 500 unless otherwise specified. It is strongly
+recommended to avoid small values for `count` to fetch large numbers of records
+because this will flood the system. A large `count` size should not impact calls
+which are expected to return a very small number of records, and should improve
+performance for calls where fetching 500 records would only provide a fraction
+by preventing the delay of making a huge number of requests.
 
     client.lists.members.all('123456', count=100, offset=0)
 
@@ -57,7 +82,7 @@ all available fields (for example, only the email_address of a member).
 Simply add `fields` arguments in your function. The following only
 display email_address and id for each member in list 123456:
 
-    client.lists.members.all(get_all=True, '123456', fields="members.email_address,members.id")
+    client.lists.members.all('123456', get_all=True, fields="members.email_address,members.id")
 
 ### Examples
 
@@ -65,7 +90,7 @@ display email_address and id for each member in list 123456:
     client.lists.all(get_all=True, fields="lists.name,lists.id")
 
     # returns all members inside list '123456'
-    client.lists.members.all(get_all=True, '123456')
+    client.lists.members.all('123456', get_all=True)
 
     # return the first 100 member's email addresses for the list with id 123456
     client.lists.members.all('123456', count=100, offset=0, fields="members.email_address")
@@ -88,7 +113,17 @@ display email_address and id for each member in list 123456:
 
     # You can also disable at runtime with the optional ``enabled`` parameter.
     # Every API call will return None
-    client = MailChimp('YOUR USERNAME', 'YOUR SECRET KEY', enabled=False)
+    client = MailChimp('YOUR SECRET KEY', enabled=False)
+
+    # You are encouraged to specify a value in seconds for the ``timeout``
+    # parameter to avoid hanging requests.
+    client = MailChimp('YOUR SECRET KEY', timeout=10.0)
+
+    # You are encouraged to specify a User-Agent for requests to the MailChimp
+    # API. Headers can be specified using the ``request_headers`` parameter.
+    headers = requests.utils.default_headers()
+    headers['User-Agent'] = 'Example (example@example.com)'
+    client = MailChimp('YOUR SECRET KEY', request_headers=headers)
 
 ## API Structure
 
@@ -96,66 +131,80 @@ All endpoints follow the structure listed in the official MailChimp API
 v3 documentation. The structure will be listed below and then the
 individual methods available after.
 
-MailChimp
-+- Root
-+- Authorized Apps
-+- Automations
-|  +- Actions
-|  +- Emails
-|  |  +- Actions
-|  |  +- Queues
-|  +- Removed Subscribers
-+- Batch Operations
-+- Campaign Folders
-+- Campaigns
-|  +- Actions
-|  +- Content
-|  +- Feedback
-|  +- Send Checklist
-+- Conversations
-|  +- Messages
-+- Stores
-|  +- Carts
-|  |  +- Lines
-|  +- Customers
-|  +- Orders
-|  |  +- Lines
-|  +- Products
-|     +- Variants
-+- File Manager Files
-+- File Manager Folders
-+- Lists
-|  +- Abuse Reports
-|  +- Activity
-|  +- Clients
-|  +- Growth History
-|  +- Interest Categories
-|  |  +- Interests
-|  +- Members
-|  |  +- Activity
-|  |  +- Goals
-|  |  +- Notes
-|  +- Merge Fields
-|  +- Segments
-|  |  +- Segment Members
-|  +- Signup Forms
-|  +- Twitter Lead Generation Carts
-|  +- Webhooks
-+- Reports
-|  +- Campaign Abuse
-|  +- Campaign Advice
-|  +- Click Reports
-|  |  +- Members
-|  +- Domain Performance
-|  +- EepURL Reports
-|  +- Email Activity
-|  +- Location
-|  +- Sent To
-|  +- Sub-Reports
-|  +- Unsubscribes
-+- Template Folders
-+- Templates
-   +- Default Content
+    MailChimp
+    +- Root
+    +- Authorized Apps
+    +- Automations
+    |  +- Actions
+    |  +- Emails
+    |  |  +- Actions
+    |  |  +- Queues
+    |  +- Removed Subscribers
+    +- Batch Operations
+    +- Batch Webhooks
+    +- Campaign Folders
+    +- Campaigns
+    |  +- Actions
+    |  +- Content
+    |  +- Feedback
+    |  +- Send Checklist
+    +- Conversations
+    |  +- Messages
+    +- Stores
+    |  +- Carts
+    |  |  +- Lines
+    |  +- Customers
+    |  +- Orders
+    |  |  +- Lines
+    |  +- Products
+    |     +- Images
+    |     +- Variants
+    |  +- Promo Rules
+    |     +- Promo Codes
+    +- File Manager Files
+    +- File Manager Folders
+    +- Landing Pages
+    |  +- Actions
+    |  +- Content
+    +- Lists
+    |  +- Abuse Reports
+    |  +- Activity
+    |  +- Clients
+    |  +- Growth History
+    |  +- Interest Categories
+    |  |  +- Interests
+    |  +- Members
+    |  |  +- Activity
+    |  |  +- Events
+    |  |  +- Goals
+    |  |  +- Notes
+    |  |  +- Tags
+    |  +- Merge Fields
+    |  +- Segments
+    |  |  +- Segment Members
+    |  +- Signup Forms
+    |  +- Twitter Lead Generation Carts
+    |  +- Webhooks
+    +- Ping
+    +- Reports
+    |  +- Campaign Abuse
+    |  +- Campaign Advice
+    |  +- Campaign Open reports
+    |  +- Click Reports
+    |  |  +- Members
+    |  +- Domain Performance
+    |  +- EepURL Reports
+    |  +- Email Activity
+    |  +- Google Analytics
+    |  +- Location
+    |  +- Sent To
+    |  +- Sub-Reports
+    |  +- Unsubscribes
+    +- Seach Campaigns
+    +- Search Members
+    +- Template Folders
+    +- Templates
+       +- Default Content
 
 ## API Endpoints
 
@@ -220,12 +269,22 @@ above with the name `client`.
 
 ### Batch Operations
 
-#### Batches
+#### Batch Operations
 
-    client.batches.create(data={})
-    client.batches.all(get_all=False)
-    client.batches.get(batch_id='')
-    client.batches.delete(batch_id='')
+    client.batch_operations.create(data={})
+    client.batch_operations.all(get_all=False)
+    client.batch_operations.get(batch_id='')
+    client.batch_operations.delete(batch_id='')
+
+### Batch Webhooks
+
+#### Batch Webhooks
+
+    client.batch_webhooks.create(data={})
+    client.batch_webhooks.all(get_all=False)
+    client.batch_webhooks.get(batch_webhook_id='')
+    client.batch_webhooks.update(batch_webhook_id='', data={})
+    client.batch_webhooks.delete(batch_webhook_id='')
 
 ### Campaigns
 
@@ -253,6 +312,7 @@ above with the name `client`.
     client.campaigns.actions.resume(campaign_id='')
     client.campaigns.actions.schedule(campaign_id='', data={})
     client.campaigns.actions.send(campaign_id='')
+    client.campaigns.actions.resend(campaign_id='')
     client.campaigns.actions.test(campaign_id='', data={})
     client.campaigns.actions.unschedule(campaign_id='')
 
@@ -342,7 +402,16 @@ above with the name `client`.
     client.stores.products.create(store_id='', data={})
     client.stores.products.all(store_id='', get_all=False)
     client.stores.products.get(store_id='', product_id='')
+    client.stores.products.update(store_id='', product_id='')
     client.stores.products.delete(store_id='', product_id='')
+
+#### Store Product Images
+
+    client.stores.products.images.create(store_id='', product_id='', data={})
+    client.stores.products.images.all(store_id='', product_id='', get_all=False)
+    client.stores.products.images.get(store_id='', product_id='', image_id='')
+    client.stores.products.images.update(store_id='', product_id='', image_id='', data={})
+    client.stores.products.images.delete(store_id='', product_id='', image_id='')
 
 #### Store Product Variants
 
@@ -370,6 +439,26 @@ above with the name `client`.
     client.folders.get(folder_id='')
     client.folders.update(folder_id='', data={})
     client.folders.delete(folder_id='')
+
+### Landing Pages
+
+#### Landing Pages
+
+    client.landing_pages.create(data={})
+    client.landing_pages.all()
+    client.landing_pages.all(fields='')
+    client.landing_pages.get(page_id='')
+    client.landing_pages.update(page_id='', data={})
+    client.landing_pages.delete(page_id='')
+   
+#### Landing Pages Actions
+
+    client.landing_pages.actions.publish(page_id='')
+    client.landing_pages.actions.unpublish(page_id='')
+   
+#### Landing Pages Content
+
+    client.landing_pages.content.get(page_id='')
 
 ### Lists
 
@@ -424,10 +513,16 @@ above with the name `client`.
     client.lists.members.update(list_id='', subscriber_hash='', data={})
     client.lists.members.create_or_update(list_id='', subscriber_hash='', data={})
     client.lists.members.delete(list_id='', subscriber_hash='')
+    client.lists.members.delete_permanent(list_id='', subscriber_hash='')
 
 #### List Member Activity
 
     client.lists.members.activity.all(list_id='', subscriber_hash='')
+
+#### List Member Events
+
+    client.lists.members.events.create(list_id='', subscriber_hash='', data={})
+    client.lists.members.events.all(list_id='', subscriber_hash='', get_all=False)
 
 #### List Member Goals
 
@@ -441,6 +536,11 @@ above with the name `client`.
     client.lists.members.notes.update(list_id='', subscriber_hash='', note_id='', data={})
     client.lists.members.notes.delete(list_id='', subscriber_hash='', note_id='')
 
+#### List Member Tags
+
+    client.lists.members.tags.update(list_id='', subscriber_hash='', data={})
+    client.lists.members.tags.all(list_id='', subscriber_hash='')
+
 #### List Merge Fields
 
     client.lists.merge_fields.create(list_id='', data={})
@@ -453,8 +553,9 @@ above with the name `client`.
 
     client.lists.segments.create(list_id='', data={})
     client.lists.segments.all(list_id='', get_all=False)
-    client.lists.segments.gett(list_id='', segment_id='')
+    client.lists.segments.get(list_id='', segment_id='')
     client.lists.segments.update(list_id='', segment_id='', data={})
+    client.lists.segments.update_members(list_id='', segment_id='', data={})
     client.lists.segments.delete(list_id='', segment_id='')
 
 #### List Segment Members
@@ -468,17 +569,12 @@ above with the name `client`.
     client.lists.signup_forms.create(list_id='', data={})
     client.lists.signup_forms.all(list_id='')
 
-#### List Twitter Lead Generation Cards
-
-    client.lists.twitter_cards.create(list_id='', data={})
-    client.lists.twitter_cards.all(list_id='')
-    client.lists.twitter_cards.get(list_id='', twitter_card_id='')
-
 #### List Webhooks
 
     client.lists.webhooks.create(list_id='', data={})
     client.lists.webhooks.all(list_id='')
     client.lists.webhooks.get(list_id='', webhook_id='')
+    client.lists.webhooks.update(list_id='', webhook_id='', data={})
     client.lists.webhooks.delete(list_id='', webhook_id='')
 
 ### Reports
@@ -522,7 +618,7 @@ above with the name `client`.
 
 #### Locations Report
 
-    client.reports.locations.all(campaign_id='')
+    client.reports.locations.all(campaign_id='', get_all=False)
 
 #### Sent To Reports
 
@@ -537,6 +633,16 @@ above with the name `client`.
 
     client.reports.unsubscribes.all(campaign_id='', get_all=False)
     client.reports.unsubscribes.get(campaign_id='', subscriber_hash='')
+
+### Search
+
+#### Campaigns
+
+    client.search_campaigns.get()
+
+#### Members
+
+    client.search_members.get()
 
 ### Templates
 
@@ -559,6 +665,29 @@ above with the name `client`.
 #### Default Content
 
     client.templates.default_content.all(template_id='')
+
+## Logging
+
+The MailChimp client will log request/response detail into the mailchimp3.client
+logging namespace. Consider the following snippet to get started with logging:
+
+```python
+import logging
+fh = logging.FileHandler('/path/to/some/log.log')
+logger = logging.getLogger('mailchimp3.client')
+logger.addHandler(fh)
+
+# use the client normally
+client.lists.all(**{'fields': 'lists.date_created'})
+```
+
+request/response detail will be appended into /path/to/some/log.log:
+```
+GET Request: https://us15.api.mailchimp.com/3.0/lists?fields=lists.date_created
+GET Response: 200 {"lists":[{"date_created":"2017-05-10T13:53:05+00:00"},{"date_created":"2017-08-22T20:27:56+00:00"},{"date_created":"2017-05-12T21:22:15+00:00"},{"date_created":"2017-04-27T17:42:04+00:00"},{"date_created":"2017-05-10T14:14:49+00:00"},{"date_created":"2017-05-10T13:52:37+00:00"},{"date_created":"2017-05-10T13:51:40+00:00"}]}
+```
+
+Check the [docs](https://docs.python.org/2/library/logging.html) for more detail on the Python logging package.
 
 ## Support
 

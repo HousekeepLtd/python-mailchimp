@@ -43,26 +43,20 @@ class StoreCustomers(BaseApi):
         }
         """
         self.store_id = store_id
-        try:
-            test = data['id']
-        except KeyError as error:
-            error.message += ' The store customer must have an id'
-            raise
-        try:
-            test = data['email_address']
-        except KeyError as error:
-            error.message += ' The store customer must have an email_address'
-            raise
+        if 'id' not in data:
+            raise KeyError('The store customer must have an id')
+        if 'email_address' not in data:
+            raise KeyError('The store customer must have an email_address')
         check_email(data['email_address'])
-        try:
-            test = data['opt_in_status']
-        except KeyError as error:
-            error.message += ' The store customer must have an opt_in_status'
-            raise
+        if 'opt_in_status' not in data:
+            raise KeyError('The store customer must have an opt_in_status')
         if data['opt_in_status'] not in [True, False]:
             raise TypeError('The opt_in_status must be True or False')
         response = self._mc_client._post(url=self._build_path(store_id, 'customers'), data=data)
-        self.customer_id = response['id']
+        if response is not None:
+            self.customer_id = response['id']
+        else:
+            self.customer_id = None
         return response
 
 
@@ -140,22 +134,13 @@ class StoreCustomers(BaseApi):
         """
         self.store_id = store_id
         self.customer_id = customer_id
-        try:
-            test = data['id']
-        except KeyError as error:
-            error.message += ' The store customer must have an id'
-            raise
-        try:
-            test = data['email_address']
-        except KeyError as error:
-            error.message += ' Each store customer must have an email_address'
-            raise
+        if 'id' not in data:
+            raise KeyError('The store customer must have an id')
+        if 'email_address' not in data:
+            raise KeyError('Each store customer must have an email_address')
         check_email(data['email_address'])
-        try:
-            test = data['opt_in_status']
-        except KeyError as error:
-            error.message += ' The store customer must have an opt_in_status'
-            raise
+        if 'opt_in_status' not in data:
+            raise KeyError('The store customer must have an opt_in_status')
         if data['opt_in_status'] not in [True, False]:
             raise TypeError('The opt_in_status must be True or False')
         return self._mc_client._put(url=self._build_path(store_id, 'customers', customer_id), data=data)

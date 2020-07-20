@@ -47,16 +47,16 @@ class ListInterestCategoryInterest(BaseApi):
         """
         self.list_id = list_id
         self.category_id = category_id
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The list interest category interest must have a name'
-            raise
+        if 'name' not in data:
+            raise KeyError('The list interest category interest must have a name')
         response =  self._mc_client._post(
             url=self._build_path(list_id, 'interest-categories', category_id, 'interests'),
             data=data
         )
-        self.interest_id = response['id']
+        if response is not None:
+            self.interest_id = response['id']
+        else:
+            self.interest_id = None
         return response
 
 
@@ -80,7 +80,7 @@ class ListInterestCategoryInterest(BaseApi):
         self.category_id = category_id
         self.interest_id = None
         if get_all:
-            self._iterate(url=self._build_path(list_id, 'interest-categories', category_id, 'interests'), **queryparams)
+            return self._iterate(url=self._build_path(list_id, 'interest-categories', category_id, 'interests'), **queryparams)
         else:
             return self._mc_client._get(
                 url=self._build_path(list_id, 'interest-categories', category_id, 'interests'),
@@ -130,11 +130,8 @@ class ListInterestCategoryInterest(BaseApi):
         self.list_id = list_id
         self.category_id = category_id
         self.interest_id = interest_id
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The list interest category interest must have a name'
-            raise
+        if 'name' not in data:
+            raise KeyError('The list interest category interest must have a name')
         return self._mc_client._patch(
             url=self._build_path(list_id, 'interest-categories', category_id, 'interests', interest_id),
             data=data

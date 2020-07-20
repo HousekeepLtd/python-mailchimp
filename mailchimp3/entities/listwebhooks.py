@@ -43,14 +43,14 @@ class ListWebhooks(BaseApi):
         }
         """
         self.list_id = list_id
-        try:
-            test = data['url']
-        except KeyError as error:
-            error.message += ' The list webhook must have a url'
-            raise
+        if 'url' not in data:
+            raise KeyError('The list webhook must have a url')
         check_url(data['url'])
         response = self._mc_client._post(url=self._build_path(list_id, 'webhooks'), data=data)
-        self.webhook_id = response['id']
+        if response is not None:
+            self.webhook_id = response['id']
+        else:
+            self.webhook_id = None
         return response
 
 
@@ -78,6 +78,20 @@ class ListWebhooks(BaseApi):
         self.list_id = list_id
         self.webhook_id = webhook_id
         return self._mc_client._get(url=self._build_path(list_id, 'webhooks', webhook_id))
+
+
+    def update(self, list_id, webhook_id, data):
+        """
+        Update the settings for an existing webhook.
+
+        :param list_id: The unique id for the list
+        :type list_id: :py:class:`str`
+        :param webhook_id: The unique id for the webhook
+        :type webhook_id: :py:class:`str`
+        """
+        self.list_id = list_id
+        self.webhook_id = webhook_id
+        return self._mc_client._patch(url=self._build_path(list_id, 'webhooks', webhook_id), data=data)
 
 
     def delete(self, list_id, webhook_id):

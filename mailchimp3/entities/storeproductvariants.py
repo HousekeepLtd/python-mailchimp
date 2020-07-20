@@ -44,17 +44,15 @@ class StoreProductVariants(BaseApi):
         """
         self.store_id = store_id
         self.product_id = product_id
-        try:
-            test = data['id']
-        except KeyError as error:
-            error.message += ' The product variant must have an id'
-            raise
-        try:
-            test = data['title']
-        except KeyError as error:
-            error.message += ' The product variant must have a title'
+        if 'id' not in data:
+            raise KeyError('The product variant must have an id')
+        if 'title' not in data:
+            raise KeyError('The product variant must have a title')
         response = self._mc_client._post(url=self._build_path(store_id, 'products', product_id, 'variants'), data=data)
-        self.variant_id = response['id']
+        if response is not None:
+            self.variant_id = response['id']
+        else:
+            self.variant_id = None
         return response
 
 
@@ -80,10 +78,13 @@ class StoreProductVariants(BaseApi):
         if get_all:
             return self._iterate(url=self._build_path(store_id, 'products', product_id, 'variants'), **queryparams)
         else:
-            return self._mc_client._post(url=self._build_path(store_id, 'products', product_id, 'variants'), **queryparams)
+            return self._mc_client._get(
+                url=self._build_path(store_id, 'products', product_id, 'variants'),
+                **queryparams
+            )
 
 
-    def get(self, store_id, product_id, variant_id, **kwargs):
+    def get(self, store_id, product_id, variant_id, **queryparams):
         """
         Get information about a specific product variant.
 
@@ -93,16 +94,16 @@ class StoreProductVariants(BaseApi):
         :type product_id: :py:class:`str`
         :param variant_id: The id for the product variant.
         :type variant_id: :py:class:`str`
-        :param kwargs: The query string parameters
-        kwargs['fields'] = []
-        kwargs['exclude_fields'] = []
+        :param queryparams: The query string parameters
+        queryparams['fields'] = []
+        queryparams['exclude_fields'] = []
         """
         self.store_id = store_id
         self.product_id = product_id
         self.variant_id = variant_id
-        return self._mc_client._post(
+        return self._mc_client._get(
             url=self._build_path(store_id, 'products', product_id, 'variants', variant_id),
-            **kwargs
+            **queryparams
         )
 
 
@@ -148,16 +149,10 @@ class StoreProductVariants(BaseApi):
         self.store_id = store_id
         self.product_id = product_id
         self.variant_id = variant_id
-        try:
-            test = data['id']
-        except KeyError as error:
-            error.message += ' The product variant must have an id'
-            raise
-        try:
-            test = data['title']
-        except KeyError as error:
-            error.message += ' The product variant must have a title'
-            raise
+        if 'id' not in data:
+             raise KeyError('The product variant must have an id')
+        if 'title' not in data:
+            raise KeyError('The product variant must have a title')
         return self._mc_client._put(
             url=self._build_path(store_id, 'products', product_id, 'variants', variant_id),
             data=data

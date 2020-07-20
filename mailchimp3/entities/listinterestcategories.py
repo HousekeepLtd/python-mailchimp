@@ -43,21 +43,18 @@ class ListInterestCategories(BaseApi):
         }
         """
         self.list_id = list_id
-        try:
-            test = data['title']
-        except KeyError as error:
-            error.message += ' The list interest category must have a title'
-            raise
-        try:
-            test = data['type']
-        except KeyError as error:
-            error.message += ' The list interest category must have a type'
-            raise
+        if 'title' not in data:
+            raise KeyError('The list interest category must have a title')
+        if 'type' not in data:
+            raise KeyError('The list interest category must have a type')
         if data['type'] not in ['checkboxes', 'dropdown', 'radio', 'hidden']:
             raise ValueError('The list interest category type must be one of "checkboxes", "dropdown", "radio", or '
                              '"hidden"')
         response = self._mc_client._post(url=self._build_path(list_id, 'interest-categories'), data=data)
-        self.category_id = response['id']
+        if response is not None:
+            self.category_id = response['id']
+        else:
+            self.category_id = None
         return response
 
 
@@ -118,16 +115,10 @@ class ListInterestCategories(BaseApi):
         """
         self.list_id = list_id
         self.category_id = category_id
-        try:
-            test = data['title']
-        except KeyError as error:
-            error.message += ' The list interest category must have a title'
-            raise
-        try:
-            test = data['type']
-        except KeyError as error:
-            error.message += ' The list interest category must have a type'
-            raise
+        if 'title' not in data:
+            raise KeyError('The list interest category must have a title')
+        if 'type' not in data:
+            raise KeyError('The list interest category must have a type')
         if data['type'] not in ['checkboxes', 'dropdown', 'radio', 'hidden']:
             raise ValueError('The list interest category type must be one of "checkboxes", "dropdown", "radio", or '
                              '"hidden"')

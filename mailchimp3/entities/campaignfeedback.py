@@ -41,13 +41,13 @@ class CampaignFeedback(BaseApi):
         queryparams['exclude_fields'] = []
         """
         self.campaign_id = campaign_id
-        try:
-            test = data['message']
-        except KeyError as error:
-            error.message += ' The campaign feedback must have a message'
-            raise
+        if 'message' not in data:
+            raise KeyError('The campaign feedback must have a message')
         response = self._mc_client._post(url=self._build_path(campaign_id, 'feedback'), data=data, **queryparams)
-        self.feedback_id = response['feedback_id']
+        if response is not None:
+            self.feedback_id = response['feedback_id']
+        else:
+            self.feedback_id = None
         return response
 
 
@@ -105,11 +105,8 @@ class CampaignFeedback(BaseApi):
         """
         self.campaign_id = campaign_id
         self.feedback_id = feedback_id
-        try:
-            test = data['message']
-        except KeyError as error:
-            error.message += ' The campaign feedback must have a message'
-            raise
+        if 'message' not in data:
+            raise KeyError('The campaign feedback must have a message')
         return self._mc_client._patch(url=self._build_path(campaign_id, 'feedback', feedback_id), data=data)
 
 

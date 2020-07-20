@@ -33,13 +33,13 @@ class TemplateFolders(BaseApi):
             "name": string*
         }
         """
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The template folder must have a name'
-            raise
+        if 'name' not in data:
+            raise KeyError('The template folder must have a name')
         response = self._mc_client._post(url=self._build_path(), data=data)
-        self.folder_id = response['id']
+        if response is not None:
+            self.folder_id = response['id']
+        else:
+            self.folder_id = None
         return response
 
 
@@ -88,11 +88,8 @@ class TemplateFolders(BaseApi):
             "name": string*
         }
         """
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The template folder must have a name'
-            raise
+        if 'name' not in data:
+            raise KeyError('The template folder must have a name')
         self.folder_id = folder_id
         return self._mc_client._patch(url=self._build_path(folder_id), data=data)
 

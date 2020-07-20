@@ -52,30 +52,21 @@ class Stores(BaseApi):
             "currency_code": string*
         }
         """
-        try:
-            test = data['id']
-        except KeyError as error:
-            error.message += ' The store must have an id'
-            raise
-        try:
-            test = data['list_id']
-        except KeyError as error:
-            error.message += ' The store must have a list_id'
-            raise
-        try:
-            test = data['name']
-        except KeyError as error:
-            error.message += ' The store must have a name'
-            raise
-        try:
-            test = data['currency_code']
-        except KeyError as error:
-            error.message += ' The store must have a currency_code'
-            raise
+        if 'id' not in data:
+            raise KeyError('The store must have an id')
+        if 'list_id' not in data:
+            raise KeyError('The store must have a list_id')
+        if 'name' not in data:
+            raise KeyError('The store must have a name')
+        if 'currency_code' not in data:
+            raise KeyError('The store must have a currency_code')
         if not re.match(r"^[A-Z]{3}$", data['currency_code']):
             raise ValueError('The currency_code must be a valid 3-letter ISO 4217 currency code')
         response = self._mc_client._post(url=self._build_path(), data=data)
-        self.store_id = response['id']
+        if response is not None:
+            self.store_id = response['id']
+        else:
+            self.store_id = None
         return response
 
 

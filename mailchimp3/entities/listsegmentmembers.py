@@ -48,22 +48,19 @@ class ListSegmentMembers(BaseApi):
         """
         self.list_id = list_id
         self.segment_id = segment_id
-        try:
-            test = data['email_address']
-        except KeyError as error:
-            error.message += ' The list segment member must have an email_address'
-            raise
+        if 'email_address' not in data:
+            raise KeyError('The list segment member must have an email_address')
         check_email(data['email_address'])
-        try:
-            test = data['status']
-        except KeyError as error:
-            error.message += ' The list segment member must have a status'
-            raise
+        if 'status' not in data:
+            raise KeyError('The list segment member must have a status')
         if data['status'] not in ['subscribed', 'unsubscribed', 'cleaned', 'pending']:
             raise ValueError('The list segment member status must be one of "subscribed", "unsubscribed", "cleaned" or'
                              '"pending"')
         response = self._mc_client._post(url=self._build_path(list_id, 'segments', segment_id, 'members'), data=data)
-        self.subscriber_hash = response['id']
+        if response is not None:
+            self.subscriber_hash = response['id']
+        else:
+            self.subscriber_hash = None
         return response
 
 

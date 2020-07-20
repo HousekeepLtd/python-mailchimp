@@ -48,13 +48,13 @@ class ListMemberNotes(BaseApi):
         subscriber_hash = check_subscriber_hash(subscriber_hash)
         self.list_id = list_id
         self.subscriber_hash = subscriber_hash
-        try:
-            test = data['note']
-        except KeyError as error:
-            error.message += ' The list member note must have a note'
-            raise
+        if 'note' not in data:
+            raise KeyError('The list member note must have a note')
         response = self._mc_client._post(url=self._build_path(list_id, 'members', subscriber_hash, 'notes'), data=data)
-        self.note_id = response['id']
+        if response is not None:
+            self.note_id = response['id']
+        else:
+            self.note_id = None
         return response
 
 
@@ -135,11 +135,8 @@ class ListMemberNotes(BaseApi):
         self.list_id = list_id
         self.subscriber_hash = subscriber_hash
         self.note_id = note_id
-        try:
-            test = data['note']
-        except KeyError as error:
-            error.message += ' The list member note must have a note'
-            raise
+        if 'note' not in data:
+            raise KeyError('The list member note must have a note')
         return self._mc_client._patch(
             url=self._build_path(list_id, 'members', subscriber_hash, 'notes', note_id),
             data=data

@@ -42,9 +42,9 @@ class ListAbuseReports(BaseApi):
         self.list_id = list_id
         self.report_id = None
         if get_all:
-            return self._iterate(url=self._build_path(list_id, 'abuse-report'), **queryparams)
+            return self._iterate(url=self._build_path(list_id, 'abuse-reports'), **queryparams)
         else:
-            return self._mc_client._get(url=self._build_path(list_id, 'abuse-report'), **queryparams)
+            return self._mc_client._get(url=self._build_path(list_id, 'abuse-reports'), **queryparams)
 
 
     def get(self, list_id, report_id, **queryparams):
@@ -63,4 +63,4 @@ class ListAbuseReports(BaseApi):
         """
         self.list_id = list_id
         self.report_id = report_id
-        return self._mc_client._get(url=self._build_path(list_id, 'abuse-report', report_id), **queryparams)
+        return self._mc_client._get(url=self._build_path(list_id, 'abuse-reports', report_id), **queryparams)
