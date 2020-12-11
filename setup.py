@@ -35,9 +35,10 @@ setup(
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     keywords='mailchimp api v3 client wrapper',
     packages=find_packages(),
+    setup_requires=['wheel'],
     install_requires=['requests>=2.7.0'],
-    # test_suite='tests',
 )
