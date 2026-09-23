@@ -1,10 +1,10 @@
-|mailchimp3 v3.0.14 on PyPi| |MIT license| |Stable|
+|mailchimp3 v3.0.21 on PyPi| |MIT license| |Stable|
 
 python-mailchimp-api
 ====================
 
-A straighforward python client for v3 of MailChimp API using requests >=
-2.7.0.
+A straightforward python client for v3 of MailChimp API using requests
+>= 2.7.0.
 
 Getting Started
 ---------------
@@ -41,13 +41,13 @@ History
 
 Up to date with
 `changelog <http://developer.mailchimp.com/documentation/mailchimp/guides/changelog/>`__
-features listed thru 3/03/2017.
+features listed through 3/03/2017.
 
 Initialization
 ~~~~~~~~~~~~~~
 
 Grab ``YOUR_API_KEY`` from your mailchimp account (Account > Extra > Api
-Keys). ``YOUR_USERNAME`` is the one you use to login on the website and
+Keys). ``YOUR_USERNAME`` is the one you use to log in on the website and
 is optional.
 
 ::
@@ -173,6 +173,7 @@ individual methods available after.
    |  +- Send Checklist
    +- Conversations
    |  +- Messages
+   +- Customer Journeys
    +- Stores
    |  +- Carts
    |  |  +- Lines
@@ -223,7 +224,7 @@ individual methods available after.
    |  +- Sent To
    |  +- Sub-Reports
    |  +- Unsubscribes
-   +- Seach Campaigns
+   +- Search Campaigns
    +- Search Members
    +- Template Folders
    +- Templates
@@ -445,6 +446,18 @@ Conversation Messages
    client.conversations.messages.all(conversation_id='')
    client.conversations.messages.get(conversation_id='', message_id='')
 
+Customer Journeys
+~~~~~~~~~~~~~~~~~
+
+.. _customer-journeys-1:
+
+Customer Journeys
+^^^^^^^^^^^^^^^^^
+
+::
+
+   client.customer_journeys.trigger(journey_id='', step_id='', data={})
+
 E-Commerce
 ~~~~~~~~~~
 
@@ -638,7 +651,8 @@ List Activity
 
 ::
 
-   client.lists.activity.all(list_id='')
+   client.lists.activity.all(list_id='', subscriber_hash='')
+   client.lists.activity.feed(list_id='', subscriber_hash='')
 
 List Clients
 ^^^^^^^^^^^^
@@ -970,8 +984,7 @@ License
 
 The project is licensed under the MIT License.
 
-.. |mailchimp3 v3.0.14 on PyPi| image:: https://img.shields.io/pypi/v/mailchimp3.svg
+.. |mailchimp3 v3.0.21 on PyPi| image:: https://img.shields.io/pypi/v/mailchimp3.svg
    :target: https://pypi.python.org/pypi/mailchimp3
 .. |MIT license| image:: https://img.shields.io/badge/licence-MIT-blue.svg
 .. |Stable| image:: https://img.shields.io/badge/status-stable-green.svg
-
